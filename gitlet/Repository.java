@@ -1,9 +1,10 @@
 package gitlet;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
+import java.io.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import static gitlet.StagingArea.*;
 
 import static gitlet.Utils.*;
 
@@ -17,7 +18,6 @@ import static gitlet.Utils.*;
  * @author TODO
  */
 public class Repository {
-
     /**
      * The current working directory.
      */
@@ -29,15 +29,7 @@ public class Repository {
     /**
      * The refs directory
      */
-    static public final File REFS = join(Repository.GITLET_DIR, "Refs");
-    /**
-     * The refs directory
-     */
-    static public final File OBJECTS = join(Repository.GITLET_DIR, "Objects");
-    /**
-     * The HEAD file
-     */
-    public static final File HEAD = join(GITLET_DIR, "HEAD");
+    static public final File OBJECTS = join(Repository.GITLET_DIR, "objects");
     /**
      * The STAGING_AREA File
      */
@@ -59,19 +51,61 @@ public class Repository {
     public static void init() {
         if (!GITLET_DIR.exists()) {
             try {
+                //Init gitlet repo
                 GITLET_DIR.mkdir();
                 OBJECTS.mkdir();
+                //Init staging area
                 STAGING_AREA.createNewFile();
+                writeObject(STAGING_AREA, new StagingArea());
+                //Init refs directory and HEAD file
                 Refs.init();
+                //Initial commit
                 Commit initialCommit = new Commit("initial commit", null, null);
-                String initalSha = sha1(serialize(initialCommit));
-                initialCommit.saveCommit(initalSha);
-                Refs.updateHead(initalSha, "master");
+                String initialCommitId = saveObject(initialCommit);
+                Refs.updateHead(initialCommitId, "master");
             } catch (Exception e) {
-                System.out.println(e.getMessage());
+                System.out.println(e);
             }
         } else {
             System.out.println("A Gitlet version-control system already exists in the current directory.");
         }
+    }
+
+    public static void add(String filePath) {
+        File targetFile = join(CWD, filePath);
+        HashMap<String, String> stagingArea = StagingArea.getNewestStagingArea();
+        Blob blob = new Blob(targetFile);
+        String fileId = sha1(serialize(blob));
+        if (stagingArea.containsKey(filePath)
+                && stagingArea.get(filePath).equals(fileId)) {
+            return;
+        }
+        stagingArea.put(filePath, fileId);
+        saveStagingArea(stagingArea);
+        try {
+            saveObject(blob);
+        } catch (IOException e) {
+            System.out.println(e.getClass() + " " + e.getMessage());
+        }
+    }
+
+    public static void printStagingArea() {
+        HashMap<String, String> stagingArea = StagingArea.getNewestStagingArea();
+        Set<String> keySet = stagingArea.keySet();
+        for (String k: keySet) {
+            System.out.println(k + ": " + stagingArea.get(k));
+        }
+    }
+
+    public static String saveObject(Serializable gitObject) throws IOException {
+        String objectId = sha1((Object) serialize(gitObject));
+        File dir = join(OBJECTS, objectId.substring(0, 2));
+        File file = join(dir, objectId.substring(2));
+        if (!dir.exists()) {
+            dir.mkdir();
+        }
+        file.createNewFile();
+        writeObject(file, gitObject);
+        return objectId;
     }
 }

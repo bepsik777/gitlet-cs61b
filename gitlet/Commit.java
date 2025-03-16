@@ -16,6 +16,7 @@ import static gitlet.Utils.*;
  *  @author TODO
  */
 public class Commit implements Dumpable {
+    private final String OBJECT_TYPE = "commit";
     /** The message of this Commit. */
     private final String message;
 
@@ -60,26 +61,6 @@ public class Commit implements Dumpable {
 
     public Map<String, String> getTrackedFiles() {
         return this.trackedFiles;
-    }
-
-    public void saveCommit(String id) {
-        String firstTwoCharOfId = id.substring(0, 2);
-        File objectsSubfolder = join(Repository.OBJECTS, firstTwoCharOfId);
-        if (!objectsSubfolder.exists()) {
-            try {
-                objectsSubfolder.mkdir();
-            } catch (Exception e) {
-                System.out.println(e.getMessage());
-            }
-        }
-        File commitFile = join(objectsSubfolder, id.substring(2));
-        writeObject(commitFile, this);
-
-        try {
-            commitFile.createNewFile();
-        } catch (Exception e) {
-            System.out.println(e);
-        }
     }
 
     public void dump(){}
