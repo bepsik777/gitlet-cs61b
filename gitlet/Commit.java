@@ -5,6 +5,7 @@ package gitlet;
 import java.io.File;
 import java.util.Date;
 import java.util.Map;
+import gitlet.Repository;
 
 import static gitlet.Utils.*;
 
@@ -61,6 +62,26 @@ public class Commit implements Dumpable {
 
     public Map<String, String> getTrackedFiles() {
         return this.trackedFiles;
+    }
+
+    public void setTrackedFiles() {
+        /*
+        * 1. if parentId is not null, retrieve parent commit tracked files map
+        * 2. if parent commit tracked files is not null, copy parent commit tracked files to new commit tracked files
+        * 3. get staging area tracked files
+        * 4. override tracked files to reflect changes from staging area
+        * */
+
+        // Retrieve parent commit if exist
+    }
+
+    private Commit getParentCommit() {
+        if (parentID != null) {
+            File dir = join(Repository.OBJECTS, parentID.substring(0,2));
+            File fileName = join(dir, parentID.substring((2)));
+            return readObject(fileName, Commit.class);
+        }
+        return null;
     }
 
     public void dump(){}
