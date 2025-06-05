@@ -1,9 +1,11 @@
 package gitlet;
 
 import java.io.*;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+
 import static gitlet.StagingArea.*;
 
 import static gitlet.Utils.*;
@@ -72,28 +74,27 @@ public class Repository {
     }
 
     public static void add(String filePath) {
-        File targetFile = join(CWD, filePath);
-        HashMap<String, String> stagingArea = StagingArea.getNewestStagingArea();
-        Blob blob = new Blob(targetFile);
-        String fileId = sha1(serialize(blob));
+        byte[] targetFileContent = serialize(new Blob(readContents(join(CWD, filePath))));
+        HashMap<String, byte[]> stagingArea = StagingArea.getNewestStagingArea();
         if (stagingArea.containsKey(filePath)
-                && stagingArea.get(filePath).equals(fileId)) {
+                && Arrays.equals(targetFileContent, stagingArea.get(filePath))) {
             return;
         }
-        stagingArea.put(filePath, fileId);
+
+        /*
+         * Add:
+         * if current working version is same as in HEAD commit, remove from staging area
+         */
+
+        stagingArea.put(filePath, targetFileContent);
         saveStagingArea(stagingArea);
-        try {
-            saveObject(blob);
-        } catch (IOException e) {
-            System.out.println(e.getClass() + " " + e.getMessage());
-        }
     }
 
     public static void printStagingArea() {
-        HashMap<String, String> stagingArea = StagingArea.getNewestStagingArea();
+        HashMap<String, byte[]> stagingArea = StagingArea.getNewestStagingArea();
         Set<String> keySet = stagingArea.keySet();
-        for (String k: keySet) {
-            System.out.println(k + ": " + stagingArea.get(k));
+        for (String k : keySet) {
+            System.out.println(k);
         }
     }
 
@@ -107,5 +108,56 @@ public class Repository {
         file.createNewFile();
         writeObject(file, gitObject);
         return objectId;
+    }
+
+    public static String saveSerializedObject(byte[] gitObject) throws IOException {
+        String objectId = sha1((Object) gitObject);
+        File dir = join(OBJECTS, objectId.substring(0, 2));
+        File file = join(dir, objectId.substring(2));
+        if (!dir.exists()) {
+            dir.mkdir();
+        }
+        file.createNewFile();
+        writeObject(file, gitObject);
+        return objectId;
+    }
+
+    public static void commit(String message) {
+        Map<String, byte[]> stagingArea = StagingArea.getNewestStagingArea();
+        if (stagingArea.isEmpty()) {
+            System.out.println("No changes added to the commit.");
+            return;
+        }
+        String headCommitId = Refs.getHeadCommitId();
+        String activeBranch = Refs.getActiveBranch();
+        Commit newCommit = new Commit(message, headCommitId, activeBranch);
+        newCommit.setTrackedFiles(StagingArea.getNewestStagingArea());
+
+        try {
+            for (String key : stagingArea.keySet()) {
+                saveSerializedObject(stagingArea.get(key));
+            }
+            String commitId = saveObject(newCommit);
+            Refs.updateHead(commitId, "master");
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+        }
+        StagingArea.clearStagingArea();
+    }
+
+    public static File getFileByShaHash(String id) {
+        File directory = join(OBJECTS, id.substring(0, 2));
+        return join(directory, id.substring(2));
+    }
+
+    public static Commit getHeadCommit() {
+        String headCommitId = Refs.getHeadCommitId();
+        File commit = getFileByShaHash(headCommitId);
+        return readObject(commit, Commit.class);
+    }
+
+    public static void printHeadCommit() {
+        Commit headCommit = getHeadCommit();
+        headCommit.dump();
     }
 }

@@ -27,6 +27,17 @@ public class Main {
                 }
                 Repository.add(fileName);
                 break;
+            case "commit":
+                String message = args[1];
+                if (message == null) {
+                    System.out.println("pls provide a commit message");
+                    break;
+                }
+                Repository.commit(message);
+                break;
+            case "print-head":
+                Repository.printHeadCommit();
+                break;
             case "print-index":
                 Repository.printStagingArea();
                 break;
