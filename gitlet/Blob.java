@@ -12,6 +12,10 @@ public class Blob implements Dumpable {
         fileContent = readContents(file);
     }
 
+    public Blob(byte[] fileContent) {
+        this.fileContent = fileContent;
+    }
+
     public String getObjectType() {
         return objectType;
     }
