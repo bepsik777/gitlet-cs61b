@@ -1,5 +1,6 @@
 package gitlet;
 import java.util.HashMap;
+import java.util.Map;
 
 import static gitlet.Utils.*;
 
@@ -25,6 +26,12 @@ public class StagingArea implements Dumpable {
 
     public static void saveStagingArea(HashMap<String, String> sa) {
         writeObject(Repository.STAGING_AREA, new StagingArea(sa));
+    }
+
+    public static void clearStagingArea() {
+        HashMap<String, String> stagingArea = getNewestStagingArea();
+        stagingArea.clear();
+        saveStagingArea(stagingArea);
     }
 
     public void dump() {
