@@ -1,6 +1,8 @@
 package gitlet;
 
 
+import static gitlet.Utils.*;
+
 /**
  * Driver class for Gitlet, a subset of the Git version-control system.
  *
@@ -36,10 +38,10 @@ public class Main {
                 Repository.commit(message);
                 break;
             case "print-head":
-                Repository.printHeadCommit();
+                printHeadCommit();
                 break;
             case "print-index":
-                Repository.printStagingArea();
+                printStagingArea();
                 break;
         }
     }

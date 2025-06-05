@@ -90,38 +90,6 @@ public class Repository {
         saveStagingArea(stagingArea);
     }
 
-    public static void printStagingArea() {
-        HashMap<String, byte[]> stagingArea = StagingArea.getNewestStagingArea();
-        Set<String> keySet = stagingArea.keySet();
-        for (String k : keySet) {
-            System.out.println(k);
-        }
-    }
-
-    public static String saveObject(Serializable gitObject) throws IOException {
-        String objectId = sha1((Object) serialize(gitObject));
-        File dir = join(OBJECTS, objectId.substring(0, 2));
-        File file = join(dir, objectId.substring(2));
-        if (!dir.exists()) {
-            dir.mkdir();
-        }
-        file.createNewFile();
-        writeObject(file, gitObject);
-        return objectId;
-    }
-
-    public static String saveSerializedObject(byte[] gitObject) throws IOException {
-        String objectId = sha1((Object) gitObject);
-        File dir = join(OBJECTS, objectId.substring(0, 2));
-        File file = join(dir, objectId.substring(2));
-        if (!dir.exists()) {
-            dir.mkdir();
-        }
-        file.createNewFile();
-        writeObject(file, gitObject);
-        return objectId;
-    }
-
     public static void commit(String message) {
         Map<String, byte[]> stagingArea = StagingArea.getNewestStagingArea();
         if (stagingArea.isEmpty()) {
@@ -143,21 +111,5 @@ public class Repository {
             System.out.println(e.getMessage());
         }
         StagingArea.clearStagingArea();
-    }
-
-    public static File getFileByShaHash(String id) {
-        File directory = join(OBJECTS, id.substring(0, 2));
-        return join(directory, id.substring(2));
-    }
-
-    public static Commit getHeadCommit() {
-        String headCommitId = Refs.getHeadCommitId();
-        File commit = getFileByShaHash(headCommitId);
-        return readObject(commit, Commit.class);
-    }
-
-    public static void printHeadCommit() {
-        Commit headCommit = getHeadCommit();
-        headCommit.dump();
     }
 }
