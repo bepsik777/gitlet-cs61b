@@ -26,10 +26,20 @@ public class Refs {
     public static void updateHead(String commit, String branch) {
         File branchHead = join(HEADS_DIR, branch);
         if (branchHead.exists()) {
-            writeContents(branchHead, commit, "\n");
-            writeContents(HEAD, "ref: refs/heads/", branch, "\n");
+            writeContents(branchHead, commit);
+            writeContents(HEAD, "ref: refs/heads/", branch);
         } else {
             System.out.println("No branch with this name exit");
         }
+    }
+
+    public static String getHeadCommitId() {
+        String headLocation = readContentsAsString(HEAD).replaceFirst("ref: ", "");
+        File head = join(Repository.GITLET_DIR, headLocation);
+        return readContentsAsString(head);
+    }
+
+    public static String getActiveBranch() {
+        return readContentsAsString(HEAD).replaceFirst("ref: ", "").replaceFirst(HEADS_DIR.toString(), "");
     }
 }
