@@ -91,6 +91,12 @@ public class Commit implements Dumpable {
         TreeMap<String, String> stagingAreaIndex = new TreeMap<>();
         for (String key: stagingArea.keySet()) {
             byte[] fileContent = stagingArea.get(key);
+
+            // If file is staged for removal, remove reference to it in new commit
+            if (fileContent.length == 1 && fileContent[0] == 0) {
+                this.trackedFiles.remove(key);
+                continue;
+            }
             String fileShaHash = sha1((Object) fileContent);
             stagingAreaIndex.put(key, fileShaHash);
         }

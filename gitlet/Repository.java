@@ -112,4 +112,31 @@ public class Repository {
         }
         StagingArea.clearStagingArea();
     }
+
+    public static void remove(String filepath) {
+        File file = join(CWD, filepath);
+        if (!file.exists()) {
+            System.out.println("No such file in the current directory");
+            return;
+        }
+        HashMap<String, byte[]> stagingArea = StagingArea.getNewestStagingArea();
+        Commit headCommit = getHeadCommit();
+        Map<String, String> trackedFiles = headCommit.getTrackedFiles();
+
+        if (!stagingArea.containsKey(filepath) && !trackedFiles.containsKey(filepath)) {
+            System.out.println("No reason to remove the file.");
+            return;
+        }
+
+        //Remove file from staging area if staged
+        stagingArea.remove(filepath);
+
+        //stage for removal and delete from CWD if file is tracked by head commit
+        String fileId = sha1((Object) serialize(new Blob(file)));
+        if (trackedFiles.containsKey(filepath) && trackedFiles.get(filepath).equals(fileId)) {
+            stagingArea.put(filepath, new byte[]{0});
+            restrictedDelete(filepath);
+        }
+        saveStagingArea(stagingArea);
+    }
 }

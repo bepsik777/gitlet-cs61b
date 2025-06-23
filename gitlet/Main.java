@@ -22,19 +22,27 @@ public class Main {
                 Repository.init();
                 break;
             case "add":
-                String fileName = args[1];
-                if (fileName == null) {
+                if (args.length == 1) {
                     System.out.println("pls provide a valid file path");
                     break;
                 }
+                String fileName = args[1];
                 Repository.add(fileName);
                 break;
+            case "rm":
+                if (args.length == 1) {
+                    System.out.println("pls provide a valid file path");
+                    break;
+                }
+                String path = args[1];
+                Repository.remove(path);
+                break;
             case "commit":
-                String message = args[1];
-                if (message == null) {
+                if (args.length == 1) {
                     System.out.println("pls provide a commit message");
                     break;
                 }
+                String message = args[1];
                 Repository.commit(message);
                 break;
             case "print-head":
