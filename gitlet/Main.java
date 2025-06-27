@@ -45,6 +45,19 @@ public class Main {
                 String message = args[1];
                 Repository.commit(message);
                 break;
+            case "checkout":
+                if (args.length == 1) {
+                    System.out.println("pls provide a commit message");
+                    break;
+                }
+                if (args.length == 2) {
+                    break;
+                }
+                if (args[1].equals("--")) {
+                    String checkedOutFile = args[2];
+                    Repository.basicCheckout(checkedOutFile);
+                    break;
+                }
             case "print-head":
                 printHeadCommit();
                 break;

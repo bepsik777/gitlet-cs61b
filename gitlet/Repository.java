@@ -1,6 +1,7 @@
 package gitlet;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -140,5 +141,20 @@ public class Repository {
             restrictedDelete(filepath);
         }
         saveStagingArea(stagingArea);
+    }
+
+    public static void basicCheckout(String fileName) {
+        File targetFile = join(CWD, fileName);
+        Commit headCommit = getHeadCommit();
+        Map<String, String> filesTrackedByHead = headCommit.getTrackedFiles();
+        if (!filesTrackedByHead.containsKey(fileName)) {
+            System.out.println("File does not exist in that commit.");
+            return;
+        }
+        File trackedFile = getFileByShaHash(filesTrackedByHead.get(fileName));
+        Blob trackedBlob = readObject(trackedFile, Blob.class);
+        byte[] trackedContent = trackedBlob.getFileContent();
+        String deserializedContent = new String(trackedContent, StandardCharsets.UTF_8);
+        writeContents(targetFile, deserializedContent);
     }
 }
