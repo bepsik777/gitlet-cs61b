@@ -93,11 +93,11 @@ public class Commit implements Dumpable {
             byte[] fileContent = stagingArea.get(key);
 
             // If file is staged for removal, remove reference to it in new commit
-            if (fileContent.length == 1 && fileContent[0] == 0) {
+            if (fileContent == null) {
                 this.trackedFiles.remove(key);
                 continue;
             }
-            String fileShaHash = sha1((Object) fileContent);
+            String fileShaHash = sha1((Object) serialize(new Blob(fileContent)));
             stagingAreaIndex.put(key, fileShaHash);
         }
         this.trackedFiles.putAll(stagingAreaIndex);

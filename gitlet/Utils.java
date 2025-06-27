@@ -285,17 +285,6 @@ class Utils {
         return objectId;
     }
 
-    public static String saveSerializedObject(byte[] gitObject) throws IOException {
-        String objectId = sha1((Object) gitObject);
-        File dir = join(Repository.OBJECTS, objectId.substring(0, 2));
-        File file = join(dir, objectId.substring(2));
-        if (!dir.exists()) {
-            dir.mkdir();
-        }
-        file.createNewFile();
-        writeObject(file, gitObject);
-        return objectId;
-    }
     public static File getFileByShaHash(String id) {
         File directory = join(Repository.OBJECTS, id.substring(0, 2));
         return join(directory, id.substring(2));
@@ -316,8 +305,25 @@ class Utils {
         HashMap<String, byte[]> stagingArea = StagingArea.getNewestStagingArea();
         Set<String> keySet = stagingArea.keySet();
         for (String k : keySet) {
-            System.out.println(k);
+            if (stagingArea.get(k) == null) {
+                System.out.println(k + " staged for removal");
+            } else {
+                System.out.println(k + " " + stagingArea.get(k).length);
+            }
         }
+    }
+
+    public static boolean isTrackedByHeadCommit(String filePath, byte[] fileContent) {
+        Commit headCommit = getHeadCommit();
+        Map<String, String> headTrackedFiles = headCommit.getTrackedFiles();
+        if (headTrackedFiles.containsKey(filePath)) {
+            String fileHash = headTrackedFiles.get(filePath);
+            File trackedFile = getFileByShaHash(fileHash);
+            Blob fileObject = readObject(trackedFile, Blob.class);
+            byte[] trackedFileContent = fileObject.getFileContent();
+            return Arrays.equals(fileContent, trackedFileContent);
+        }
+        return false;
     }
 }
 

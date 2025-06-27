@@ -74,17 +74,19 @@ public class Repository {
     }
 
     public static void add(String filePath) {
-        byte[] targetFileContent = serialize(new Blob(readContents(join(CWD, filePath))));
+        byte[] targetFileContent = readContents(join(CWD, filePath));
         HashMap<String, byte[]> stagingArea = StagingArea.getNewestStagingArea();
         if (stagingArea.containsKey(filePath)
                 && Arrays.equals(targetFileContent, stagingArea.get(filePath))) {
             return;
         }
-
         /*
-         * Add:
-         * if current working version is same as in HEAD commit, remove from staging area
+         * If current working version is same as in HEAD commit, remove from staging area
          */
+        if (isTrackedByHeadCommit(filePath, targetFileContent)) {
+            stagingArea.remove(filePath);
+            return;
+        }
 
         stagingArea.put(filePath, targetFileContent);
         saveStagingArea(stagingArea);
@@ -103,7 +105,7 @@ public class Repository {
 
         try {
             for (String key : stagingArea.keySet()) {
-                saveSerializedObject(stagingArea.get(key));
+                saveObject(new Blob(stagingArea.get(key)));
             }
             String commitId = saveObject(newCommit);
             Refs.updateHead(commitId, "master");
@@ -134,7 +136,7 @@ public class Repository {
         //stage for removal and delete from CWD if file is tracked by head commit
         String fileId = sha1((Object) serialize(new Blob(file)));
         if (trackedFiles.containsKey(filepath) && trackedFiles.get(filepath).equals(fileId)) {
-            stagingArea.put(filepath, new byte[]{0});
+            stagingArea.put(filepath, null);
             restrictedDelete(filepath);
         }
         saveStagingArea(stagingArea);
