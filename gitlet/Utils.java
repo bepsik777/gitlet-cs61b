@@ -290,6 +290,12 @@ class Utils {
         return join(directory, id.substring(2));
     }
 
+    public static Commit getCommitByShaHash(String id) {
+        File directory = join(Repository.OBJECTS, id.substring(0, 2));
+        File commitFile = join(directory, id.substring(2));
+        return readObject(commitFile, Commit.class);
+    }
+
     public static Commit getHeadCommit() {
         String headCommitId = Refs.getHeadCommitId();
         File commit = getFileByShaHash(headCommitId);
@@ -324,6 +330,10 @@ class Utils {
             return Arrays.equals(fileContent, trackedFileContent);
         }
         return false;
+    }
+
+    public static String getCommitId(Commit commit) {
+        return sha1((Object) serialize(commit));
     }
 }
 

@@ -3,6 +3,7 @@ package gitlet;
 // TODO: any imports you need here
 
 import java.io.File;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -110,6 +111,19 @@ public class Commit implements Dumpable {
             return readObject(fileName, Commit.class);
         }
         return null;
+    }
+
+    /**
+     * TODO: Adjust for merge commits when implemented
+     * */
+    public void log(String ID) {
+        String dateFormat = "EEE LLL d kk:mm:ss yyyy Z";
+        SimpleDateFormat sf = new SimpleDateFormat(dateFormat);
+        System.out.println("===");
+        System.out.println("commit " + ID);
+        System.out.println("Date: " + sf.format(getTimestamp()));
+        System.out.println(getMessage());
+        System.out.println();
     }
 
     public void dump() {

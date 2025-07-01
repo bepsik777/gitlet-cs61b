@@ -144,17 +144,42 @@ public class Repository {
     }
 
     public static void basicCheckout(String fileName) {
+        basicCheckout(fileName, null);
+    }
+
+    public static void basicCheckout(String fileName, String commitID) {
         File targetFile = join(CWD, fileName);
-        Commit headCommit = getHeadCommit();
-        Map<String, String> filesTrackedByHead = headCommit.getTrackedFiles();
-        if (!filesTrackedByHead.containsKey(fileName)) {
+        Commit targetCommit;
+        if (commitID == null) {
+            targetCommit = getHeadCommit();
+        } else {
+            targetCommit = getCommitByShaHash(commitID);
+        }
+        Map<String, String> filesTrackedByCommit = targetCommit.getTrackedFiles();
+        if (!filesTrackedByCommit.containsKey(fileName)) {
             System.out.println("File does not exist in that commit.");
             return;
         }
-        File trackedFile = getFileByShaHash(filesTrackedByHead.get(fileName));
+        File trackedFile = getFileByShaHash(filesTrackedByCommit.get(fileName));
         Blob trackedBlob = readObject(trackedFile, Blob.class);
         byte[] trackedContent = trackedBlob.getFileContent();
         String deserializedContent = new String(trackedContent, StandardCharsets.UTF_8);
         writeContents(targetFile, deserializedContent);
+    }
+
+    public static void log(Commit commit, String commitID) {
+        commit.log(commitID);
+        if (commit.getParentID() == null) {
+            return;
+        }
+        String parentId = commit.getParentID();
+        Commit parentCommit = getCommitByShaHash(parentId);
+        log(parentCommit, parentId);
+    }
+
+    public static void log() {
+        String headId = Refs.getHeadCommitId();
+        Commit headCommit = getHeadCommit();
+        log(headCommit, headId);
     }
 }
