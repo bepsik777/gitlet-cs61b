@@ -167,6 +167,11 @@ public class Repository {
         writeContents(targetFile, deserializedContent);
     }
 
+    public static void branch(String branchName) {
+        String headCommitID = getCommitId(getHeadCommit());
+        Refs.createNewBranch(branchName, headCommitID);
+    }
+
     public static void log(Commit commit, String commitID) {
         commit.log(commitID);
         if (commit.getParentID() == null) {

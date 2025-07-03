@@ -42,4 +42,18 @@ public class Refs {
     public static String getActiveBranch() {
         return readContentsAsString(HEAD).replaceFirst("ref: ", "").replaceFirst(HEADS_DIR.toString(), "");
     }
+
+    public static void createNewBranch(String branchName, String headCommitID) {
+        File newBranch = join(HEADS_DIR, branchName);
+        if (newBranch.exists()) {
+            System.out.println("Branch with the given name already exist");
+            return;
+        }
+        try {
+            newBranch.createNewFile();
+            writeContents(newBranch, headCommitID);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+    }
 }

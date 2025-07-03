@@ -64,6 +64,14 @@ public class Main {
                     Repository.basicCheckout(checkedOutFile, commitID);
                     break;
                 }
+            case "branch":
+                if (args.length == 1) {
+                    System.out.println("pls provide a branch name");
+                    break;
+                }
+                String branchName = args[1];
+                Repository.branch(branchName);
+                break;
             case "log":
                 Repository.log();
                 break;
