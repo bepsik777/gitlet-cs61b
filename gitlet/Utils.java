@@ -319,7 +319,7 @@ class Utils {
         }
     }
 
-    public static boolean isTrackedByHeadCommit(String filePath, byte[] fileContent) {
+    public static boolean isCommitTrackedByHead(String filePath, byte[] fileContent) {
         Commit headCommit = getHeadCommit();
         Map<String, String> headTrackedFiles = headCommit.getTrackedFiles();
         if (headTrackedFiles.containsKey(filePath)) {
@@ -335,5 +335,23 @@ class Utils {
     public static String getCommitId(Commit commit) {
         return sha1((Object) serialize(commit));
     }
-}
 
+    public static void addFileToCWD(String id, String fileName) {
+        Blob blob = readObject(getFileByShaHash(id), Blob.class);
+        String contentAsString = new String(blob.getFileContent(), StandardCharsets.UTF_8);
+        File newFile = join(Repository.CWD, fileName);
+        writeContents(newFile, contentAsString);
+        try {
+            newFile.createNewFile();
+        } catch(Exception e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    public static void checkoutFile(String hashId, String fileName) {
+        Blob fileBlob = readObject(getFileByShaHash(hashId), Blob.class);
+        String fileContent = new String(fileBlob.getFileContent(), StandardCharsets.UTF_8);
+        File targetFile = join(Repository.CWD, fileName);
+        writeContents(targetFile, fileContent);
+    }
+}

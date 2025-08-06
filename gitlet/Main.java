@@ -51,6 +51,8 @@ public class Main {
                     break;
                 }
                 if (args.length == 2) {
+                    String branchName = args[1];
+                    Repository.checkoutBranch(branchName);
                     break;
                 }
                 if (args.length == 3 && args[1].equals("--")) {
@@ -74,6 +76,9 @@ public class Main {
                 break;
             case "log":
                 Repository.log();
+                break;
+            case "global-log":
+                Repository.globalLog();
                 break;
             case "print-head":
                 printHeadCommit();

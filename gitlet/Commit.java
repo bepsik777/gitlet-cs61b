@@ -72,6 +72,13 @@ public class Commit implements Dumpable {
         return this.parentID;
     }
 
+    public Commit getParentCommit() {
+        if (parentID != null) {
+            return getCommitByShaHash(this.parentID);
+        }
+        return null;
+    }
+
     public String getAuthor() {
         return this.author;
     }
@@ -90,7 +97,7 @@ public class Commit implements Dumpable {
 
         // Update tracked files with files from staging area
         TreeMap<String, String> stagingAreaIndex = new TreeMap<>();
-        for (String key: stagingArea.keySet()) {
+        for (String key : stagingArea.keySet()) {
             byte[] fileContent = stagingArea.get(key);
 
             // If file is staged for removal, remove reference to it in new commit
@@ -104,18 +111,9 @@ public class Commit implements Dumpable {
         this.trackedFiles.putAll(stagingAreaIndex);
     }
 
-    private Commit getParentCommit() {
-        if (parentID != null) {
-            File dir = join(Repository.OBJECTS, parentID.substring(0, 2));
-            File fileName = join(dir, parentID.substring((2)));
-            return readObject(fileName, Commit.class);
-        }
-        return null;
-    }
-
     /**
      * TODO: Adjust for merge commits when implemented
-     * */
+     */
     public void log(String ID) {
         String dateFormat = "EEE LLL d kk:mm:ss yyyy Z";
         SimpleDateFormat sf = new SimpleDateFormat(dateFormat);
@@ -132,7 +130,7 @@ public class Commit implements Dumpable {
         System.out.println("date: " + getTimestamp());
         System.out.println("tracked files: ");
         Map<String, String> trackedFiles = getTrackedFiles();
-        for (String fileName: trackedFiles.keySet()) {
+        for (String fileName : trackedFiles.keySet()) {
             System.out.println(fileName + ": " + trackedFiles.get(fileName));
         }
     }

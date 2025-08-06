@@ -2,10 +2,7 @@ package gitlet;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static gitlet.StagingArea.*;
 
@@ -84,7 +81,7 @@ public class Repository {
         /*
          * If current working version is same as in HEAD commit, remove from staging area
          */
-        if (isTrackedByHeadCommit(filePath, targetFileContent)) {
+        if (isCommitTrackedByHead(filePath, targetFileContent)) {
             stagingArea.remove(filePath);
             return;
         }
@@ -109,7 +106,7 @@ public class Repository {
                 saveObject(new Blob(stagingArea.get(key)));
             }
             String commitId = saveObject(newCommit);
-            Refs.updateHead(commitId, "master");
+            Refs.updateHead(commitId, activeBranch);
         } catch (IOException e) {
             System.out.println(e.getMessage());
         }
@@ -167,6 +164,38 @@ public class Repository {
         writeContents(targetFile, deserializedContent);
     }
 
+    public static void checkoutBranch(String branchName) {
+        if (!branchName.equals(Refs.getActiveBranch())) {
+            StagingArea.clearStagingArea();
+        } else {
+            System.out.println("No need to checkout the current branch.");
+            return;
+        }
+        Commit currHeadCommit = getHeadCommit();
+        Refs.switchBranch(branchName);
+        Commit nextHeadCommit = getHeadCommit();
+        Map<String, String> currTrackedFiles = currHeadCommit.getTrackedFiles();
+        Map<String, String> nextTrackedFiles = nextHeadCommit.getTrackedFiles();
+        // override or add files tracked bu head commit from the new branch
+        for (String fileName: nextTrackedFiles.keySet()) {
+            File checkedFile = join(CWD, fileName);
+            String fileId = nextTrackedFiles.get(fileName);
+            if (checkedFile.exists()) {
+                checkoutFile(fileId, fileName);
+            } else {
+                addFileToCWD(fileId, fileName);
+            }
+            if (currTrackedFiles.containsKey(fileName)) {
+                currTrackedFiles.remove(fileName);
+            }
+        }
+        // Remove each file tracked by previous branch head from CWD
+        for (String fileName: currTrackedFiles.keySet()) {
+            File file = join(CWD, fileName);
+            file.delete();
+        }
+    }
+
     public static void branch(String branchName) {
         String headCommitID = getCommitId(getHeadCommit());
         Refs.createNewBranch(branchName, headCommitID);
@@ -178,7 +207,7 @@ public class Repository {
             return;
         }
         String parentId = commit.getParentID();
-        Commit parentCommit = getCommitByShaHash(parentId);
+        Commit parentCommit = commit.getParentCommit();
         log(parentCommit, parentId);
     }
 
@@ -186,5 +215,26 @@ public class Repository {
         String headId = Refs.getHeadCommitId();
         Commit headCommit = getHeadCommit();
         log(headCommit, headId);
+    }
+
+    public static void globalLog() {
+        List<Commit> allHeadCommits = Refs.getAllBranchesHeadsCommits();
+        HashMap<String, Boolean> visitedCommits = new HashMap<String, Boolean>();
+        for(Commit commit: allHeadCommits) {
+            String commitID = getCommitId(commit);
+            globalLog(visitedCommits, commit, commitID);
+        }
+    }
+
+    private static void globalLog(HashMap<String, Boolean> visitedCommits, Commit currCommit, String currCommitID) {
+        currCommit.log(currCommitID);
+        visitedCommits.put(currCommitID, true);
+        if (currCommit.getParentID() == null) {
+            return;
+        }
+        if (visitedCommits.containsKey(currCommit.getParentID())) {
+            return;
+        }
+        globalLog(visitedCommits, currCommit.getParentCommit(), currCommit.getParentID());
     }
 }
