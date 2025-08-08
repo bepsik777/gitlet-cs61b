@@ -72,7 +72,12 @@ public class Repository {
     }
 
     public static void add(String filePath) {
-        byte[] targetFileContent = readContents(join(CWD, filePath));
+        File targetFile = join(CWD, filePath);
+        if (!targetFile.exists()) {
+            System.out.println("File does not exist.");
+            return;
+        }
+        byte[] targetFileContent = readContents(targetFile);
         HashMap<String, byte[]> stagingArea = StagingArea.getNewestStagingArea();
         if (stagingArea.containsKey(filePath)
                 && Arrays.equals(targetFileContent, stagingArea.get(filePath))) {
@@ -197,6 +202,11 @@ public class Repository {
     }
 
     public static void branch(String branchName) {
+        List<String> filesInHeadsDir = plainFilenamesIn(Refs.HEADS_DIR);
+        if (filesInHeadsDir != null && filesInHeadsDir.contains(branchName)) {
+            System.out.println("A branch with that name already exists.");
+            return;
+        }
         String headCommitID = getCommitId(getHeadCommit());
         Refs.createNewBranch(branchName, headCommitID);
     }
