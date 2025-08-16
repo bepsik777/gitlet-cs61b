@@ -86,6 +86,9 @@ public class Main {
             case "print-index":
                 printStagingArea();
                 break;
+            case "status":
+                Repository.status();
+                break;
         }
     }
 }

@@ -54,6 +54,10 @@ public class Refs {
         return readContentsAsString(HEAD).replaceFirst("ref: refs/heads/", "");
     }
 
+    public static List<String> getAllBranchesNames() {
+        return plainFilenamesIn(HEADS_DIR);
+    }
+
     public static void createNewBranch(String branchName, String headCommitID) {
         File newBranch = join(HEADS_DIR, branchName);
         if (newBranch.exists()) {

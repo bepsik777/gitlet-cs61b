@@ -86,7 +86,7 @@ public class Repository {
         /*
          * If current working version is same as in HEAD commit, remove from staging area
          */
-        if (isCommitTrackedByHead(filePath, targetFileContent)) {
+        if (isFileTrackedByHeadAndUnchanged(filePath, targetFileContent)) {
             stagingArea.remove(filePath);
             return;
         }
@@ -246,5 +246,78 @@ public class Repository {
             return;
         }
         globalLog(visitedCommits, currCommit.getParentCommit(), currCommit.getParentID());
+    }
+
+    public static void status() {
+        String activeBranchName = Refs.getActiveBranch();
+        List<String> allBranchesNames = Refs.getAllBranchesNames();
+        HashMap<String, byte[]> sa = StagingArea.getNewestStagingArea();
+        Commit head = getHeadCommit();
+        Map<String, String> trackedByHead = head.getTrackedFiles();
+        List<String> filesInCwd = plainFilenamesIn(CWD);
+        List<String> modified = new ArrayList<>();
+        List<String> deleted = new ArrayList<>();
+        List<String> untrackedUnstaged = new ArrayList<>();
+
+        for (String fileName: filesInCwd) {
+            boolean isTrackedByHead = isFileTrackedByHead(fileName);
+            boolean isStaged = sa.containsKey(fileName);
+            byte[] fileContent = readContents(join(CWD, fileName));
+            if (isTrackedByHead && !isStaged) {
+                boolean isTrackedAndUnmodified = isFileTrackedByHeadAndUnchanged(fileName, fileContent, trackedByHead);
+                if (!isTrackedAndUnmodified) {
+                    modified.add(fileName + " (modified)");
+                    trackedByHead.remove(fileName);
+                }
+            }
+            if (isStaged) {
+                byte[] stagedContent = sa.get(fileName);
+                if (!Arrays.equals(fileContent, stagedContent) && stagedContent != null) {
+                    modified.add(fileName + " (modified)");
+                    sa.remove(fileName);
+                }
+            }
+            if ((!isStaged && !isTrackedByHead) || (isStaged && sa.get(fileName) == null)) {
+                untrackedUnstaged.add(fileName);
+            }
+        }
+
+        for (String fileName: sa.keySet()) {
+            byte[] fileContent = sa.get(fileName);
+            File file = join(CWD, fileName);
+            if (fileContent != null && !file.exists()) {
+                deleted.add(fileName + " (deleted)");
+                sa.remove(fileName);
+            }
+        }
+
+        for (String fileName: trackedByHead.keySet()) {
+            File file = join(CWD, fileName);
+            if (!file.exists() && !sa.containsKey(fileName)) {
+                deleted.add(fileName + " (deleted)");
+            }
+        }
+
+        System.out.println("=== Branches ===");
+        System.out.println("*" + activeBranchName);
+        for (String branchName: allBranchesNames) {
+            if (!branchName.equals(activeBranchName)) {
+                System.out.println(branchName);
+            }
+        }
+        System.out.println();
+        printStagingArea(sa);
+        saveStagingArea(sa);
+        System.out.println("\n === Modifications Not Staged For Commit ===");
+        for (String file: deleted) {
+            System.out.println(file);
+        }
+        for (String file: modified) {
+            System.out.println(file);
+        }
+        System.out.println("\n === Untracked Files ===");
+        for (String file: untrackedUnstaged) {
+            System.out.println(file);
+        }
     }
 }

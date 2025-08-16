@@ -307,21 +307,67 @@ class Utils {
         headCommit.dump();
     }
 
-    public static void printStagingArea() {
-        HashMap<String, byte[]> stagingArea = StagingArea.getNewestStagingArea();
+    public static void printStagingArea(HashMap<String, byte[]> stagingArea) {
         Set<String> keySet = stagingArea.keySet();
+        System.out.println("=== Staged Files ===");
+        for (String k : keySet) {
+            if (stagingArea.get(k) != null) {
+                System.out.println(k);
+            }
+        }
+        System.out.println();
+        System.out.println("=== Removed Files ===");
         for (String k : keySet) {
             if (stagingArea.get(k) == null) {
-                System.out.println(k + " staged for removal");
-            } else {
-                System.out.println(k + " " + stagingArea.get(k).length);
+                System.out.println(k);
             }
         }
     }
 
-    public static boolean isCommitTrackedByHead(String filePath, byte[] fileContent) {
+    public static void printStagingArea() {
+        Map<String, byte[]> stagingArea = StagingArea.getNewestStagingArea();
+        Set<String> keySet = stagingArea.keySet();
+        System.out.println("=== Staged Files ===");
+        for (String k : keySet) {
+            if (stagingArea.get(k) != null) {
+                System.out.println(k);
+            }
+        }
+        System.out.println();
+        System.out.println("=== Removed Files ===");
+        for (String k : keySet) {
+            if (stagingArea.get(k) == null) {
+                System.out.println(k);
+            }
+        }
+    }
+
+    /**
+     * Check if file is tracked by head commit
+     * */
+    public static boolean isFileTrackedByHead(String filePath) {
         Commit headCommit = getHeadCommit();
         Map<String, String> headTrackedFiles = headCommit.getTrackedFiles();
+        return headTrackedFiles.containsKey(filePath);
+    }
+
+    /**
+     * Check if file is tracked by head commit and file content did not change
+     * */
+    public static boolean isFileTrackedByHeadAndUnchanged(String filePath, byte[] fileContent) {
+        Commit headCommit = getHeadCommit();
+        Map<String, String> headTrackedFiles = headCommit.getTrackedFiles();
+        if (headTrackedFiles.containsKey(filePath)) {
+            String fileHash = headTrackedFiles.get(filePath);
+            File trackedFile = getFileByShaHash(fileHash);
+            Blob fileObject = readObject(trackedFile, Blob.class);
+            byte[] trackedFileContent = fileObject.getFileContent();
+            return Arrays.equals(fileContent, trackedFileContent);
+        }
+        return false;
+    }
+
+    public static boolean isFileTrackedByHeadAndUnchanged(String filePath, byte[] fileContent, Map<String, String> headTrackedFiles) {
         if (headTrackedFiles.containsKey(filePath)) {
             String fileHash = headTrackedFiles.get(filePath);
             File trackedFile = getFileByShaHash(fileHash);
@@ -343,7 +389,7 @@ class Utils {
         writeContents(newFile, contentAsString);
         try {
             newFile.createNewFile();
-        } catch(Exception e) {
+        } catch (Exception e) {
             System.out.println(e.getMessage());
         }
     }
