@@ -88,6 +88,7 @@ public class Repository {
          */
         if (isFileTrackedByHeadAndUnchanged(filePath, targetFileContent)) {
             stagingArea.remove(filePath);
+            saveStagingArea(stagingArea);
             return;
         }
 
@@ -120,17 +121,19 @@ public class Repository {
 
     public static void remove(String filepath) {
         HashMap<String, byte[]> stagingArea = StagingArea.getNewestStagingArea();
-        File file = join(CWD, filepath);
         Commit headCommit = getHeadCommit();
         Map<String, String> trackedFiles = headCommit.getTrackedFiles();
         if (!stagingArea.containsKey(filepath) && !trackedFiles.containsKey(filepath)) {
             System.out.println("No reason to remove the file.");
             return;
         }
-        //Stage file for removal
-        stagingArea.put(filepath, null);
-        //delete from CWD if file is tracked by head commit
+        //unstage
+        if (stagingArea.containsKey(filepath)) {
+            stagingArea.remove(filepath);
+        }
+        //stage for removal and delete from CWD if file is tracked by head commit
         if (trackedFiles.containsKey(filepath)) {
+            stagingArea.put(filepath, null);
             restrictedDelete(filepath);
         }
         saveStagingArea(stagingArea);
@@ -246,9 +249,9 @@ public class Repository {
         Commit head = getHeadCommit();
         Map<String, String> trackedByHead = head.getTrackedFiles();
         List<String> filesInCwd = plainFilenamesIn(CWD);
-        List<String> modified = new ArrayList<>();
-        List<String> deleted = new ArrayList<>();
-        List<String> untrackedUnstaged = new ArrayList<>();
+        TreeSet<String> modified = new TreeSet<>();
+        TreeSet<String> deleted = new TreeSet<>();
+        TreeSet<String> untrackedUnstaged = new TreeSet<>();
 
         for (String fileName: filesInCwd) {
             boolean isTrackedByHead = isFileTrackedByHead(fileName);
@@ -268,8 +271,9 @@ public class Repository {
                     sa.remove(fileName);
                 }
             }
-            if ((!isStaged && !isTrackedByHead) || (isStaged && sa.get(fileName) == null)) {
+            if (!isTrackedByHead && (!isStaged || sa.get(fileName) == null)) {
                 untrackedUnstaged.add(fileName);
+                sa.remove(fileName);
             }
         }
 
@@ -299,16 +303,17 @@ public class Repository {
         System.out.println();
         printStagingArea(sa);
         saveStagingArea(sa);
-        System.out.println("\n === Modifications Not Staged For Commit ===");
+        System.out.println("\n=== Modifications Not Staged For Commit ===");
         for (String file: deleted) {
             System.out.println(file);
         }
         for (String file: modified) {
             System.out.println(file);
         }
-        System.out.println("\n === Untracked Files ===");
+        System.out.println("\n=== Untracked Files ===");
         for (String file: untrackedUnstaged) {
             System.out.println(file);
         }
+        System.out.println();
     }
 }

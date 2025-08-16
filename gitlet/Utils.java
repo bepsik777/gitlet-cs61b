@@ -308,7 +308,8 @@ class Utils {
     }
 
     public static void printStagingArea(HashMap<String, byte[]> stagingArea) {
-        Set<String> keySet = stagingArea.keySet();
+        List<String> keySet = new ArrayList<>(stagingArea.keySet());
+        Collections.sort(keySet);
         System.out.println("=== Staged Files ===");
         for (String k : keySet) {
             if (stagingArea.get(k) != null) {
@@ -326,15 +327,16 @@ class Utils {
 
     public static void printStagingArea() {
         Map<String, byte[]> stagingArea = StagingArea.getNewestStagingArea();
-        Set<String> keySet = stagingArea.keySet();
+        List<String> keySet = new ArrayList<>(stagingArea.keySet());
+        Collections.sort(keySet);
         System.out.println("=== Staged Files ===");
         for (String k : keySet) {
             if (stagingArea.get(k) != null) {
                 System.out.println(k);
+                stagingArea.remove(k);
             }
         }
-        System.out.println();
-        System.out.println("=== Removed Files ===");
+        System.out.println("\n === Removed Files ===");
         for (String k : keySet) {
             if (stagingArea.get(k) == null) {
                 System.out.println(k);
