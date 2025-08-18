@@ -17,6 +17,9 @@ public class Main {
     public static void main(String[] args) {
         // TODO: what if args is empty?
         String firstArg = args[0];
+        if (firstArg == null) {
+            System.out.println("Please provide an argument");
+        }
         switch (firstArg) {
             case "init":
                 Repository.init();
@@ -47,7 +50,7 @@ public class Main {
                 break;
             case "checkout":
                 if (args.length == 1) {
-                    System.out.println("pls provide a commit message");
+                    System.out.println("Please enter a commit message.");
                     break;
                 }
                 if (args.length == 2) {
@@ -80,6 +83,10 @@ public class Main {
             case "global-log":
                 Repository.globalLog();
                 break;
+            case "find":
+                String msg = args[1];
+                Repository.find(msg);
+                break;
             case "print-head":
                 printHeadCommit();
                 break;
@@ -89,6 +96,8 @@ public class Main {
             case "status":
                 Repository.status();
                 break;
+            default:
+                System.out.println("No command with that name exists.");
         }
     }
 }

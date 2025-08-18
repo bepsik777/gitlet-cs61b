@@ -222,24 +222,41 @@ public class Repository {
     }
 
     public static void globalLog() {
-        List<Commit> allHeadCommits = Refs.getAllBranchesHeadsCommits();
-        HashMap<String, Boolean> visitedCommits = new HashMap<String, Boolean>();
-        for(Commit commit: allHeadCommits) {
-            String commitID = getCommitId(commit);
-            globalLog(visitedCommits, commit, commitID);
+        HashMap<String, Commit> allCommits = getAllCommits();
+        for (String key: allCommits.keySet()) {
+            Commit c = allCommits.get(key);
+            c.log(key);
         }
     }
 
-    private static void globalLog(HashMap<String, Boolean> visitedCommits, Commit currCommit, String currCommitID) {
-        currCommit.log(currCommitID);
-        visitedCommits.put(currCommitID, true);
-        if (currCommit.getParentID() == null) {
+    public static void find(String msg) {
+        HashMap<String, Commit> allCommits = getAllCommits();
+        for (String key: allCommits.keySet()) {
+            Commit commit = allCommits.get(key);
+            if (commit.getMessage().equals(msg)) {
+                System.out.println(key);
+            }
+        }
+    }
+
+    private static HashMap<String, Commit> getAllCommits() {
+        List<Commit> allHeadCommits = Refs.getAllBranchesHeadsCommits();
+        HashMap<String, Commit> allCommits = new HashMap<>();
+        for (Commit c: allHeadCommits) {
+            getAllCommits(c, allCommits);
+        }
+        return allCommits;
+    }
+
+    private static void getAllCommits(Commit commit, HashMap<String, Commit> allCommits) {
+        String commitID = getCommitId(commit);
+        String parentID = commit.getParentID();
+        allCommits.put(commitID, commit);
+        if (parentID == null || allCommits.containsKey(parentID)) {
             return;
         }
-        if (visitedCommits.containsKey(currCommit.getParentID())) {
-            return;
-        }
-        globalLog(visitedCommits, currCommit.getParentCommit(), currCommit.getParentID());
+        Commit parentCommit = commit.getParentCommit();
+        getAllCommits(parentCommit, allCommits);
     }
 
     public static void status() {

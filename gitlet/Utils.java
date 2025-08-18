@@ -346,7 +346,7 @@ class Utils {
 
     /**
      * Check if file is tracked by head commit
-     * */
+     */
     public static boolean isFileTrackedByHead(String filePath) {
         Commit headCommit = getHeadCommit();
         Map<String, String> headTrackedFiles = headCommit.getTrackedFiles();
@@ -355,7 +355,7 @@ class Utils {
 
     /**
      * Check if file is tracked by head commit and file content did not change
-     * */
+     */
     public static boolean isFileTrackedByHeadAndUnchanged(String filePath, byte[] fileContent) {
         Commit headCommit = getHeadCommit();
         Map<String, String> headTrackedFiles = headCommit.getTrackedFiles();
