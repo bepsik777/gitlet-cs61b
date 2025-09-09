@@ -217,13 +217,12 @@ public class Repository {
 
     public static void reset(String commitID) {
         Commit commitToCheckout = getCommitByShaHash(commitID);
-        String activeBranch = Refs.getActiveBranch();
         Map<String, String> trackedFiles = commitToCheckout.getTrackedFiles();
         Map<String, String> trackedFilesByHeadCommit = getHeadCommit().getTrackedFiles();
         List<String> filesInCWD = plainFilenamesIn(CWD);
         for (String file: filesInCWD) {
             if (trackedFiles.containsKey(file)) {
-                basicCheckout(commitID, file);
+                basicCheckout(file, commitID);
             } else if (trackedFilesByHeadCommit.containsKey(file)) {
                 File fileToRemove = join(CWD, file);
                 fileToRemove.delete();
