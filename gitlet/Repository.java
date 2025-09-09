@@ -8,14 +8,10 @@ import static gitlet.StagingArea.*;
 
 import static gitlet.Utils.*;
 
-// TODO: any imports you need here
-
 /**
  * Represents a gitlet repository.
- *  TODO: It's a good idea to give a description here of what else this Class
- *  does at a high level.
  *
- * @author TODO
+ * @author apotocki
  */
 public class Repository {
     /**
@@ -195,6 +191,42 @@ public class Repository {
         }
     }
 
+    public static void removeBranch(String branchName) {
+        String activeBranch = Refs.getActiveBranch();
+        if (activeBranch.equals(branchName)) {
+            System.out.println("Cannot remove the current branch.");
+            return;
+        }
+        List<String> allBranchesNames = Refs.getAllBranchesNames();
+        if (!allBranchesNames.contains(branchName)) {
+            System.out.println("A branch with that name does not exist.");
+            return;
+        }
+        File branchPointer = join(Refs.HEADS_DIR, branchName);
+        try {
+            branchPointer.delete();
+        } catch (Exception e) {
+            System.out.println(e.getMessage());;
+        }
+    }
+
+    public static void reset(String commitID) {
+        Commit commitToCheckout = getCommitByShaHash(commitID);
+        String activeBranch = Refs.getActiveBranch();
+        Map<String, String> trackedFiles = commitToCheckout.getTrackedFiles();
+        Map<String, String> trackedFilesByHeadCommit = getHeadCommit().getTrackedFiles();
+        List<String> filesInCWD = plainFilenamesIn(CWD);
+        for (String file: filesInCWD) {
+            if (trackedFiles.containsKey(file)) {
+                basicCheckout(commitID, file);
+            } else if (trackedFilesByHeadCommit.containsKey(file)) {
+                File fileToRemove = join(CWD, file);
+                fileToRemove.delete();
+            }
+        }
+        Refs.updateHead(commitID, Refs.getActiveBranch());
+    }
+
     public static void branch(String branchName) {
         List<String> filesInHeadsDir = plainFilenamesIn(Refs.HEADS_DIR);
         if (filesInHeadsDir != null && filesInHeadsDir.contains(branchName)) {
@@ -231,11 +263,18 @@ public class Repository {
 
     public static void find(String msg) {
         HashMap<String, Commit> allCommits = getAllCommits();
+        boolean atLeastOneMsgFound = false;
         for (String key: allCommits.keySet()) {
             Commit commit = allCommits.get(key);
             if (commit.getMessage().equals(msg)) {
+                if (!atLeastOneMsgFound) {
+                    atLeastOneMsgFound = true;
+                }
                 System.out.println(key);
             }
+        }
+        if (!atLeastOneMsgFound) {
+            System.out.println("Found no commit with that message.");
         }
     }
 

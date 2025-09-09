@@ -15,7 +15,6 @@ public class Main {
      * <COMMAND> <OPERAND1> <OPERAND2> ...
      */
     public static void main(String[] args) {
-        // TODO: what if args is empty?
         String firstArg = args[0];
         if (firstArg == null) {
             System.out.println("Please provide an argument");
@@ -76,6 +75,22 @@ public class Main {
                 }
                 String branchName = args[1];
                 Repository.branch(branchName);
+                break;
+            case "rm-branch":
+                if (args.length == 1) {
+                    System.out.println("pls provide a branch name");
+                    break;
+                }
+                String branchToDelete = args[1];
+                Repository.removeBranch(branchToDelete);
+                break;
+            case "reset":
+                if (args.length == 1) {
+                    System.out.println("pls provide a branch name");
+                    break;
+                }
+                String commitToReset = args[1];
+                Repository.reset(commitToReset);
                 break;
             case "log":
                 Repository.log();

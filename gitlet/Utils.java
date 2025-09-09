@@ -345,6 +345,15 @@ class Utils {
     }
 
     /**
+     * Checks if file is tracked by commit specified by sha hash
+     * */
+    public static boolean isFileTrackedByCommit(String filePath, String commitID) {
+        Commit commit = getCommitByShaHash(commitID);
+        Map<String, String> headTrackedFiles = commit.getTrackedFiles();
+        return headTrackedFiles.containsKey(filePath);
+    }
+
+    /**
      * Check if file is tracked by head commit
      */
     public static boolean isFileTrackedByHead(String filePath) {
