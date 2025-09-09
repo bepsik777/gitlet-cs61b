@@ -166,6 +166,11 @@ public class Repository {
             System.out.println("No need to checkout the current branch.");
             return;
         }
+        List<String> allBranchesNames = Refs.getAllBranchesNames();
+        if (!allBranchesNames.contains(branchName)) {
+            System.out.println("No such branch exists.");
+            return;
+        }
         Commit currHeadCommit = getHeadCommit();
         Refs.switchBranch(branchName);
         Commit nextHeadCommit = getHeadCommit();
