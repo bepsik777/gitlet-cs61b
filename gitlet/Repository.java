@@ -159,6 +159,10 @@ public class Repository {
         writeContents(targetFile, deserializedContent);
     }
 
+    private static void checkoutCommit(String commitID) {
+
+    }
+
     public static void checkoutBranch(String branchName) {
         if (!branchName.equals(Refs.getActiveBranch())) {
             StagingArea.clearStagingArea();
@@ -177,7 +181,7 @@ public class Repository {
         Map<String, String> currTrackedFiles = currHeadCommit.getTrackedFiles();
         Map<String, String> nextTrackedFiles = nextHeadCommit.getTrackedFiles();
         // override or add files tracked bu head commit from the new branch
-        for (String fileName: nextTrackedFiles.keySet()) {
+        for (String fileName : nextTrackedFiles.keySet()) {
             File checkedFile = join(CWD, fileName);
             String fileId = nextTrackedFiles.get(fileName);
             if (checkedFile.exists()) {
@@ -190,7 +194,7 @@ public class Repository {
             }
         }
         // Remove each file tracked by previous branch head from CWD
-        for (String fileName: currTrackedFiles.keySet()) {
+        for (String fileName : currTrackedFiles.keySet()) {
             File file = join(CWD, fileName);
             file.delete();
         }
@@ -211,24 +215,41 @@ public class Repository {
         try {
             branchPointer.delete();
         } catch (Exception e) {
-            System.out.println(e.getMessage());;
+            System.out.println(e.getMessage());
+            ;
         }
     }
 
     public static void reset(String commitID) {
         Commit commitToCheckout = getCommitByShaHash(commitID);
+        if (commitToCheckout == null) {
+            System.out.println("No commit with that id exists.");
+            return;
+        }
         Map<String, String> trackedFiles = commitToCheckout.getTrackedFiles();
         Map<String, String> trackedFilesByHeadCommit = getHeadCommit().getTrackedFiles();
         List<String> filesInCWD = plainFilenamesIn(CWD);
         for (String file: filesInCWD) {
-            if (trackedFiles.containsKey(file)) {
-                basicCheckout(file, commitID);
-            } else if (trackedFilesByHeadCommit.containsKey(file)) {
+            if (!trackedFilesByHeadCommit.containsKey(file) && trackedFiles.containsKey(file)) {
+                System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
+                return;
+            }
+        }
+        Refs.updateHead(commitID, Refs.getActiveBranch());
+        StagingArea.clearStagingArea();
+        for (String file: trackedFiles.keySet()) {
+            if (filesInCWD.contains(file)) {
+                checkoutFile(trackedFiles.get(file), file);
+            } else {
+                addFileToCWD(trackedFiles.get(file), file);
+            }
+        }
+        for (String file: trackedFilesByHeadCommit.keySet()) {
+            if (!trackedFiles.containsKey(file)) {
                 File fileToRemove = join(CWD, file);
                 fileToRemove.delete();
             }
         }
-        Refs.updateHead(commitID, Refs.getActiveBranch());
     }
 
     public static void branch(String branchName) {
@@ -259,7 +280,7 @@ public class Repository {
 
     public static void globalLog() {
         HashMap<String, Commit> allCommits = getAllCommits();
-        for (String key: allCommits.keySet()) {
+        for (String key : allCommits.keySet()) {
             Commit c = allCommits.get(key);
             c.log(key);
         }
@@ -268,7 +289,7 @@ public class Repository {
     public static void find(String msg) {
         HashMap<String, Commit> allCommits = getAllCommits();
         boolean atLeastOneMsgFound = false;
-        for (String key: allCommits.keySet()) {
+        for (String key : allCommits.keySet()) {
             Commit commit = allCommits.get(key);
             if (commit.getMessage().equals(msg)) {
                 if (!atLeastOneMsgFound) {
@@ -285,7 +306,7 @@ public class Repository {
     private static HashMap<String, Commit> getAllCommits() {
         List<Commit> allHeadCommits = Refs.getAllBranchesHeadsCommits();
         HashMap<String, Commit> allCommits = new HashMap<>();
-        for (Commit c: allHeadCommits) {
+        for (Commit c : allHeadCommits) {
             getAllCommits(c, allCommits);
         }
         return allCommits;
@@ -313,7 +334,7 @@ public class Repository {
         TreeSet<String> deleted = new TreeSet<>();
         TreeSet<String> untrackedUnstaged = new TreeSet<>();
 
-        for (String fileName: filesInCwd) {
+        for (String fileName : filesInCwd) {
             boolean isTrackedByHead = isFileTrackedByHead(fileName);
             boolean isStaged = sa.containsKey(fileName);
             byte[] fileContent = readContents(join(CWD, fileName));
@@ -337,7 +358,7 @@ public class Repository {
             }
         }
 
-        for (String fileName: sa.keySet()) {
+        for (String fileName : sa.keySet()) {
             byte[] fileContent = sa.get(fileName);
             File file = join(CWD, fileName);
             if (fileContent != null && !file.exists()) {
@@ -346,7 +367,7 @@ public class Repository {
             }
         }
 
-        for (String fileName: trackedByHead.keySet()) {
+        for (String fileName : trackedByHead.keySet()) {
             File file = join(CWD, fileName);
             if (!file.exists() && !sa.containsKey(fileName)) {
                 deleted.add(fileName + " (deleted)");
@@ -355,7 +376,7 @@ public class Repository {
 
         System.out.println("=== Branches ===");
         System.out.println("*" + activeBranchName);
-        for (String branchName: allBranchesNames) {
+        for (String branchName : allBranchesNames) {
             if (!branchName.equals(activeBranchName)) {
                 System.out.println(branchName);
             }
@@ -364,14 +385,14 @@ public class Repository {
         printStagingArea(sa);
         saveStagingArea(sa);
         System.out.println("\n=== Modifications Not Staged For Commit ===");
-        for (String file: deleted) {
+        for (String file : deleted) {
             System.out.println(file);
         }
-        for (String file: modified) {
+        for (String file : modified) {
             System.out.println(file);
         }
         System.out.println("\n=== Untracked Files ===");
-        for (String file: untrackedUnstaged) {
+        for (String file : untrackedUnstaged) {
             System.out.println(file);
         }
         System.out.println();

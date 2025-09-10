@@ -293,6 +293,9 @@ class Utils {
     public static Commit getCommitByShaHash(String id) {
         File directory = join(Repository.OBJECTS, id.substring(0, 2));
         File commitFile = join(directory, id.substring(2));
+        if (!commitFile.exists()) {
+            return null;
+        }
         return readObject(commitFile, Commit.class);
     }
 
