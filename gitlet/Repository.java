@@ -159,8 +159,29 @@ public class Repository {
         writeContents(targetFile, deserializedContent);
     }
 
-    private static void checkoutCommit(String commitID) {
-
+    private static void checkoutCommit(Commit targetCommit, Commit currCommit) {
+        Map<String, String> trackedFiles = targetCommit.getTrackedFiles();
+        Map<String, String> trackedFilesByHeadCommit = currCommit.getTrackedFiles();
+        List<String> filesInCWD = plainFilenamesIn(CWD);
+        for (String file: filesInCWD) {
+            if (!trackedFilesByHeadCommit.containsKey(file) && trackedFiles.containsKey(file)) {
+                System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
+                return;
+            }
+        }
+        for (String file: trackedFiles.keySet()) {
+            if (filesInCWD.contains(file)) {
+                checkoutFile(trackedFiles.get(file), file);
+            } else {
+                addFileToCWD(trackedFiles.get(file), file);
+            }
+        }
+        for (String file: trackedFilesByHeadCommit.keySet()) {
+            if (!trackedFiles.containsKey(file)) {
+                File fileToRemove = join(CWD, file);
+                fileToRemove.delete();
+            }
+        }
     }
 
     public static void checkoutBranch(String branchName) {
@@ -178,26 +199,7 @@ public class Repository {
         Commit currHeadCommit = getHeadCommit();
         Refs.switchBranch(branchName);
         Commit nextHeadCommit = getHeadCommit();
-        Map<String, String> currTrackedFiles = currHeadCommit.getTrackedFiles();
-        Map<String, String> nextTrackedFiles = nextHeadCommit.getTrackedFiles();
-        // override or add files tracked bu head commit from the new branch
-        for (String fileName : nextTrackedFiles.keySet()) {
-            File checkedFile = join(CWD, fileName);
-            String fileId = nextTrackedFiles.get(fileName);
-            if (checkedFile.exists()) {
-                checkoutFile(fileId, fileName);
-            } else {
-                addFileToCWD(fileId, fileName);
-            }
-            if (currTrackedFiles.containsKey(fileName)) {
-                currTrackedFiles.remove(fileName);
-            }
-        }
-        // Remove each file tracked by previous branch head from CWD
-        for (String fileName : currTrackedFiles.keySet()) {
-            File file = join(CWD, fileName);
-            file.delete();
-        }
+        checkoutCommit(nextHeadCommit, currHeadCommit);
     }
 
     public static void removeBranch(String branchName) {
@@ -221,35 +223,15 @@ public class Repository {
     }
 
     public static void reset(String commitID) {
-        Commit commitToCheckout = getCommitByShaHash(commitID);
-        if (commitToCheckout == null) {
+        Commit targetCommit = getCommitByShaHash(commitID);
+        Commit currCommit = getHeadCommit();
+        if (targetCommit == null) {
             System.out.println("No commit with that id exists.");
             return;
         }
-        Map<String, String> trackedFiles = commitToCheckout.getTrackedFiles();
-        Map<String, String> trackedFilesByHeadCommit = getHeadCommit().getTrackedFiles();
-        List<String> filesInCWD = plainFilenamesIn(CWD);
-        for (String file: filesInCWD) {
-            if (!trackedFilesByHeadCommit.containsKey(file) && trackedFiles.containsKey(file)) {
-                System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
-                return;
-            }
-        }
+        checkoutCommit(targetCommit, currCommit);
         Refs.updateHead(commitID, Refs.getActiveBranch());
         StagingArea.clearStagingArea();
-        for (String file: trackedFiles.keySet()) {
-            if (filesInCWD.contains(file)) {
-                checkoutFile(trackedFiles.get(file), file);
-            } else {
-                addFileToCWD(trackedFiles.get(file), file);
-            }
-        }
-        for (String file: trackedFilesByHeadCommit.keySet()) {
-            if (!trackedFiles.containsKey(file)) {
-                File fileToRemove = join(CWD, file);
-                fileToRemove.delete();
-            }
-        }
     }
 
     public static void branch(String branchName) {
