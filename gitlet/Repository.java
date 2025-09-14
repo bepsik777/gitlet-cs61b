@@ -140,7 +140,6 @@ public class Repository {
     }
 
     public static void basicCheckout(String fileName, String commitID) {
-        File targetFile = join(CWD, fileName);
         Commit targetCommit;
         if (commitID == null) {
             targetCommit = getHeadCommit();
@@ -152,11 +151,7 @@ public class Repository {
             System.out.println("File does not exist in that commit.");
             return;
         }
-        File trackedFile = getFileByShaHash(filesTrackedByCommit.get(fileName));
-        Blob trackedBlob = readObject(trackedFile, Blob.class);
-        byte[] trackedContent = trackedBlob.getFileContent();
-        String deserializedContent = new String(trackedContent, StandardCharsets.UTF_8);
-        writeContents(targetFile, deserializedContent);
+        checkoutFile(filesTrackedByCommit.get(fileName), fileName);
     }
 
     private static void checkoutCommit(Commit targetCommit, Commit currCommit) {
