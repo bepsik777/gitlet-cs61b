@@ -305,6 +305,12 @@ class Utils {
         return readObject(commit, Commit.class);
     }
 
+    public static Commit getHeadCommit(String branchName) {
+        File branchRef = join(Refs.HEADS_DIR, branchName);
+        String commitId = readContentsAsString(branchRef).replaceFirst("ref: ", "");
+        return getCommitByShaHash(commitId);
+    }
+
     public static void printHeadCommit() {
         Commit headCommit = getHeadCommit();
         headCommit.dump();
@@ -409,9 +415,18 @@ class Utils {
     }
 
     public static void checkoutFile(String hashId, String fileName) {
-        Blob fileBlob = readObject(getFileByShaHash(hashId), Blob.class);
-        String fileContent = new String(fileBlob.getFileContent(), StandardCharsets.UTF_8);
+        String fileContent = getSerializedFileContent(hashId);
         File targetFile = join(Repository.CWD, fileName);
         writeContents(targetFile, fileContent);
+    }
+
+    public static String getSerializedFileContent(String fileID) {
+        Blob fileBlob = readObject(getFileByShaHash(fileID), Blob.class);
+        return new String(fileBlob.getFileContent(), StandardCharsets.UTF_8);
+    }
+
+    public static String getSerializedFileContent(File file) {
+        Blob fileBlob = readObject(file, Blob.class);
+        return new String(fileBlob.getFileContent(), StandardCharsets.UTF_8);
     }
 }

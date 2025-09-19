@@ -50,6 +50,10 @@ public class Refs {
         return readContentsAsString(head);
     }
 
+    public static String getHeadCommitId(String branchName) {
+        return readContentsAsString(join(HEADS_DIR, branchName));
+    }
+
     public static String getActiveBranch() {
         return readContentsAsString(HEAD).replaceFirst("ref: refs/heads/", "");
     }

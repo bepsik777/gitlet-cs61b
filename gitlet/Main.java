@@ -92,6 +92,14 @@ public class Main {
                 String commitToReset = args[1];
                 Repository.reset(commitToReset);
                 break;
+            case "merge":
+                if (args.length == 1) {
+                    System.out.println("pls provide a branch name");
+                    break;
+                }
+                String branchToMerge = args[1];
+                Repository.merge(branchToMerge);
+                break;
             case "log":
                 Repository.log();
                 break;
