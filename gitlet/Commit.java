@@ -39,6 +39,11 @@ public class Commit implements Dumpable {
     private final String parentID;
 
     /**
+     * Second parent Commit of this Commit if is a merge commit
+     */
+    private String secondParentID;
+
+    /**
      * Author of this Commit
      */
     private final String author;
@@ -52,12 +57,18 @@ public class Commit implements Dumpable {
         this.message = msg;
         this.author = author;
         this.parentID = parentID;
+        this.secondParentID = null;
         if (parentID == null) {
             this.timestamp = new Date(0);
         } else {
             this.timestamp = new Date();
         }
         this.trackedFiles = new TreeMap<>();
+    }
+
+    public Commit(String msg, String parentID, String secondParentID, String author) {
+        this(msg, parentID, author);
+        this.secondParentID = secondParentID;
     }
 
     public String getMessage() {
@@ -72,9 +83,20 @@ public class Commit implements Dumpable {
         return this.parentID;
     }
 
+    public String getSecondParentID() {
+        return this.secondParentID;
+    }
+
     public Commit getParentCommit() {
         if (parentID != null) {
             return getCommitByShaHash(this.parentID);
+        }
+        return null;
+    }
+
+    public Commit getSecondParentCommit() {
+        if (secondParentID != null) {
+            return getCommitByShaHash(this.secondParentID);
         }
         return null;
     }
@@ -90,8 +112,13 @@ public class Commit implements Dumpable {
     public void setTrackedFiles(Map<String, byte[]> stagingArea) {
         // Retrieve parent commit if exist
         Commit parentCommit = getParentCommit();
+        Commit secondParentCommit = getSecondParentCommit();
         if (parentCommit != null) {
             Map<String, String> parentTrackedFiles = parentCommit.getTrackedFiles();
+            this.trackedFiles.putAll(parentTrackedFiles);
+        }
+        if (secondParentCommit != null) {
+            Map<String, String> parentTrackedFiles = secondParentCommit.getTrackedFiles();
             this.trackedFiles.putAll(parentTrackedFiles);
         }
 
