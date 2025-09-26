@@ -25,5 +25,6 @@ public class Blob implements Dumpable {
     }
 
     @Override
-    public void dump(){}
+    public void dump() {
+    }
 }

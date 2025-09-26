@@ -1,6 +1,5 @@
 package gitlet;
 import java.util.HashMap;
-import java.util.Map;
 
 import static gitlet.Utils.*;
 

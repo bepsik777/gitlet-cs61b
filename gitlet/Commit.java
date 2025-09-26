@@ -1,25 +1,15 @@
 package gitlet;
-
-// TODO: any imports you need here
-
-import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
-
-import gitlet.StagingArea;
-
 import static gitlet.Utils.*;
 
 
 /**
  * Represents a gitlet commit object.
- *  TODO: It's a good idea to give a description here of what else this Class
  *  does at a high level.
- *
- * @author TODO
+ * @author apotocki
  */
 public class Commit implements Dumpable {
     private final String OBJECT_TYPE = "commit";
@@ -36,12 +26,12 @@ public class Commit implements Dumpable {
     /**
      * Parent Commit of this Commit
      */
-    private final String parentID;
+    private final String parentId;
 
     /**
      * Second parent Commit of this Commit if is a merge commit
      */
-    private String secondParentID;
+    private String secondParentId;
 
     /**
      * Author of this Commit
@@ -51,13 +41,13 @@ public class Commit implements Dumpable {
     /**
      * List of tracked files, identified by their SHA-1 hashes
      */
-    private Map<String, String> trackedFiles;
+    private final Map<String, String> trackedFiles;
 
     public Commit(String msg, String parentID, String author) {
         this.message = msg;
         this.author = author;
-        this.parentID = parentID;
-        this.secondParentID = null;
+        this.parentId = parentID;
+        this.secondParentId = null;
         if (parentID == null) {
             this.timestamp = new Date(0);
         } else {
@@ -68,7 +58,7 @@ public class Commit implements Dumpable {
 
     public Commit(String msg, String parentID, String secondParentID, String author) {
         this(msg, parentID, author);
-        this.secondParentID = secondParentID;
+        this.secondParentId = secondParentID;
     }
 
     public String getMessage() {
@@ -79,24 +69,24 @@ public class Commit implements Dumpable {
         return this.timestamp;
     }
 
-    public String getParentID() {
-        return this.parentID;
+    public String getParentId() {
+        return this.parentId;
     }
 
-    public String getSecondParentID() {
-        return this.secondParentID;
+    public String getSecondParentId() {
+        return this.secondParentId;
     }
 
     public Commit getParentCommit() {
-        if (parentID != null) {
-            return getCommitByShaHash(this.parentID);
+        if (parentId != null) {
+            return getCommitByShaHash(this.parentId);
         }
         return null;
     }
 
     public Commit getSecondParentCommit() {
-        if (secondParentID != null) {
-            return getCommitByShaHash(this.secondParentID);
+        if (secondParentId != null) {
+            return getCommitByShaHash(this.secondParentId);
         }
         return null;
     }
@@ -138,14 +128,11 @@ public class Commit implements Dumpable {
         this.trackedFiles.putAll(stagingAreaIndex);
     }
 
-    /**
-     * TODO: Adjust for merge commits when implemented
-     */
-    public void log(String ID) {
+    public void log(String id) {
         String dateFormat = "EEE LLL d kk:mm:ss yyyy Z";
         SimpleDateFormat sf = new SimpleDateFormat(dateFormat);
         System.out.println("===");
-        System.out.println("commit " + ID);
+        System.out.println("commit " + id);
         System.out.println("Date: " + sf.format(getTimestamp()));
         System.out.println(getMessage());
         System.out.println();
@@ -153,11 +140,10 @@ public class Commit implements Dumpable {
 
     public void dump() {
         System.out.println("message: " + getMessage());
-        System.out.println("parentId: " + getParentID());
+        System.out.println("parentId: " + getParentId());
         System.out.println("date: " + getTimestamp());
         System.out.println("tracked files: ");
-        Map<String, String> trackedFiles = getTrackedFiles();
-        for (String fileName : trackedFiles.keySet()) {
+        for (String fileName : getTrackedFiles().keySet()) {
             System.out.println(fileName + ": " + trackedFiles.get(fileName));
         }
     }

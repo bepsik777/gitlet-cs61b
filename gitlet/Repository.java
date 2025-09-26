@@ -1,8 +1,6 @@
 package gitlet;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.security.spec.RSAOtherPrimeInfo;
 import java.util.*;
 
 import static gitlet.StagingArea.*;
@@ -26,7 +24,7 @@ public class Repository {
     /**
      * The refs directory
      */
-    static public final File OBJECTS = join(Repository.GITLET_DIR, "objects");
+    public static final File OBJECTS = join(Repository.GITLET_DIR, "objects");
     /**
      * The STAGING_AREA File
      */
@@ -39,9 +37,12 @@ public class Repository {
      * It will have a single branch: master, which initially points to this initial commit,
      * and master will be the current branch. The timestamp for this initial commit will
      * be 00:00:00 UTC, Thursday, 1 January 1970 in whatever format
-     * you choose for dates (this is called “The (Unix) Epoch”, represented internally by the time 0.)
-     * Since the initial commit in all repositories created by Gitlet will have exactly the same content,
-     * it follows that all repositories will automatically share this commit (they will all have the same UID)
+     * you choose for dates (this is called “The (Unix) Epoch”,
+     * represented internally by the time 0.)
+     * Since the initial commit in all repositories created by
+     * Gitlet will have exactly the same content,
+     * it follows that all repositories will automatically
+     * share this commit (they will all have the same UID)
      * and all commits in all repositories will trace back to it.
      */
 
@@ -60,11 +61,12 @@ public class Repository {
                 Commit initialCommit = new Commit("initial commit", null, null);
                 String initialCommitId = saveObject(initialCommit);
                 Refs.updateHead(initialCommitId, "master");
-            } catch (Exception e) {
-                System.out.println(e);
+            } catch (IOException e) {
+                System.out.println(e.getMessage());
             }
         } else {
-            System.out.println("A Gitlet version-control system already exists in the current directory.");
+            System.out.println("A Gitlet version-control system "
+                    + "already exists in the current directory.");
         }
     }
 
@@ -147,6 +149,10 @@ public class Repository {
         } else {
             targetCommit = getCommitByShaHash(commitID);
         }
+        if (targetCommit == null) {
+            System.out.println("No commit with that id exists.");
+            return;
+        }
         Map<String, String> filesTrackedByCommit = targetCommit.getTrackedFiles();
         if (!filesTrackedByCommit.containsKey(fileName)) {
             System.out.println("File does not exist in that commit.");
@@ -159,20 +165,21 @@ public class Repository {
         Map<String, String> trackedFiles = targetCommit.getTrackedFiles();
         Map<String, String> trackedFilesByHeadCommit = currCommit.getTrackedFiles();
         List<String> filesInCWD = plainFilenamesIn(CWD);
-        for (String file: filesInCWD) {
+        for (String file : filesInCWD) {
             if (!trackedFilesByHeadCommit.containsKey(file) && trackedFiles.containsKey(file)) {
-                System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
+                System.out.println("There is an untracked file in the way; "
+                        + "delete it, or add and commit it first.");
                 return;
             }
         }
-        for (String file: trackedFiles.keySet()) {
+        for (String file : trackedFiles.keySet()) {
             if (filesInCWD.contains(file)) {
                 checkoutFile(trackedFiles.get(file), file);
             } else {
                 addFileToCWD(trackedFiles.get(file), file);
             }
         }
-        for (String file: trackedFilesByHeadCommit.keySet()) {
+        for (String file : trackedFilesByHeadCommit.keySet()) {
             if (!trackedFiles.containsKey(file)) {
                 File fileToRemove = join(CWD, file);
                 fileToRemove.delete();
@@ -198,28 +205,36 @@ public class Repository {
         checkoutCommit(nextHeadCommit, currHeadCommit);
     }
 
-    public static void merge(String targetBranch) {
-        boolean isConflicted = false;
+    private static boolean canMerge(String targetBranch, String currBranch) {
+        boolean canMerge = true;
         HashMap<String, byte[]> sa = StagingArea.getNewestStagingArea();
         if (!sa.isEmpty()) {
             System.out.println("You have uncommitted changes.");
-            return;
+            canMerge = false;
         }
         List<String> allBranches = Refs.getAllBranchesNames();
         if (!allBranches.contains(targetBranch)) {
             System.out.println("A branch with that name does not exist.");
-            return;
+            canMerge = false;
         }
-        String currBranch = Refs.getActiveBranch();
         if (currBranch.equals(targetBranch)) {
             System.out.println("Cannot merge a branch with itself.");
+            canMerge = false;
+        }
+        return canMerge;
+    }
+
+    public static void merge(String targetBranch) {
+        String currBranch = Refs.getActiveBranch();
+        boolean canMerge = canMerge(targetBranch, currBranch);
+        if (!canMerge) {
             return;
         }
         Commit currBranchHead = getHeadCommit();
-        String currBranchHeadID = getCommitId(currBranchHead);
         Commit targetBranchHead = getHeadCommit(targetBranch);
-        String targetBranchHeadID = getCommitId(targetBranchHead);
         Commit splitPointCommit = findSplitPoint(currBranch, targetBranch);
+        String currBranchHeadID = getCommitId(currBranchHead);
+        String targetBranchHeadID = getCommitId(targetBranchHead);
         String splitPointCommitID = getCommitId(splitPointCommit);
         assert splitPointCommit != null;
         if (splitPointCommitID.equals(targetBranchHeadID)) {
@@ -236,32 +251,66 @@ public class Repository {
         Map<String, String> splitPointTrackedFiles = splitPointCommit.getTrackedFiles();
         // check for untracked files
         List<String> filesInCWD = plainFilenamesIn(CWD);
-        for (String file: filesInCWD) {
-            if (!currBranchTrackedFiles.containsKey(file) && targetBranchTrackedFiles.containsKey(file)) {
-                System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
+        for (String file : filesInCWD) {
+            if (!currBranchTrackedFiles.containsKey(file)
+                    && targetBranchTrackedFiles.containsKey(file)) {
+                System.out.println("There is an untracked file in the way; "
+                        + "delete it, or add and commit it first.");
                 return;
             }
         }
-        for (String file: currBranchTrackedFiles.keySet()) {
+        boolean isConflicted = merge(
+                targetBranch,
+                targetBranchHead,
+                currBranchTrackedFiles,
+                targetBranchTrackedFiles,
+                splitPointTrackedFiles
+        );
+        String msg = "Merged " + targetBranch + " into " + currBranch + ".";
+        commitMerge(msg, getCommitId(currBranchHead), getCommitId(targetBranchHead));
+        if (isConflicted) {
+            System.out.println("Encountered a merge conflict.");
+        }
+    }
+
+    private static boolean merge(
+            String targetBranch,
+            Commit targetBranchHead,
+            Map<String, String> currBranchTrackedFiles,
+            Map<String, String> targetBranchTrackedFiles,
+            Map<String, String> splitPointTrackedFiles) {
+        boolean isConflicted = false;
+        for (String file : currBranchTrackedFiles.keySet()) {
             String fileAtSplitPointHash = splitPointTrackedFiles.get(file);
             String fileAtCurrBranchHash = currBranchTrackedFiles.get(file);
             String fileAtTargetBranchHash = targetBranchTrackedFiles.get(file);
             File f = join(CWD, file);
             if (fileAtSplitPointHash != null) {
-                if (fileAtSplitPointHash.equals(fileAtCurrBranchHash) && fileAtTargetBranchHash == null) {
+                if (fileAtSplitPointHash.equals(fileAtCurrBranchHash)
+                        && fileAtTargetBranchHash == null) {
                     // unmodified in curr branch, absent in target branch
                     remove(file);
-                } else if (fileAtSplitPointHash.equals(fileAtCurrBranchHash) && !fileAtSplitPointHash.equals(fileAtTargetBranchHash)) {
+                } else if (fileAtSplitPointHash.equals(fileAtCurrBranchHash)
+                        && !fileAtSplitPointHash.equals(fileAtTargetBranchHash)) {
                     // unmodified in curr branch, modified in target branch
                     basicCheckout(file, getCommitId(targetBranchHead));
                     add(file);
-                } else if (fileAtTargetBranchHash == null || !fileAtCurrBranchHash.equals(fileAtTargetBranchHash)) {
+                } else if (fileAtTargetBranchHash == null
+                        || !fileAtCurrBranchHash.equals(fileAtTargetBranchHash)
+                        && !fileAtTargetBranchHash.equals(fileAtSplitPointHash)) {
                     // present at split point, modified in different ways (conflict)
                     String currBranchFileHash = currBranchTrackedFiles.get(file);
                     String targetBranchFileHash = targetBranchTrackedFiles.get(file);
-                    File currBranchFileVersion = currBranchFileHash != null ? getFileByShaHash(currBranchFileHash) : null;
-                    File targetBranchFileVersion = targetBranchFileHash != null ? getFileByShaHash(targetBranchFileHash) : null;
-                    String mergeContent = getConflictedFilesContent(currBranchFileVersion, targetBranchFileVersion);
+                    File currBranchFileVersion = currBranchFileHash != null
+                            ? getFileByShaHash(currBranchFileHash)
+                            : null;
+                    File targetBranchFileVersion = targetBranchFileHash != null
+                            ? getFileByShaHash(targetBranchFileHash)
+                            : null;
+                    String mergeContent = getConflictedFilesContent(
+                            currBranchFileVersion,
+                            targetBranchFileVersion
+                    );
                     writeContents(f, mergeContent);
                     add(file);
                     isConflicted = true;
@@ -269,10 +318,11 @@ public class Repository {
             }
             targetBranchTrackedFiles.remove(file);
         }
-        for (String file: new ArrayList<>(targetBranchTrackedFiles.keySet())) {
+        for (String file : new ArrayList<>(targetBranchTrackedFiles.keySet())) {
             String fileAtSplitPointHash = splitPointTrackedFiles.get(file);
             String fileAtTargetBranchHash = targetBranchTrackedFiles.get(file);
-            if (fileAtSplitPointHash != null && fileAtSplitPointHash.equals(fileAtTargetBranchHash)) {
+            if (fileAtSplitPointHash != null
+                    && fileAtSplitPointHash.equals(fileAtTargetBranchHash)) {
                 targetBranchTrackedFiles.remove(file);
             }
             //absent from split point and curr branch, present in target branch
@@ -281,23 +331,32 @@ public class Repository {
                 add(file);
             }
         }
-        String msg = "Merged "+ targetBranch +" into " + currBranch + ".";
-        commitMerge(msg, getCommitId(currBranchHead), getCommitId(targetBranchHead));
-        if (isConflicted) {
-            System.out.println("Encountered a merge conflict.");
-        }
+        return isConflicted;
     }
 
-    private static String getConflictedFilesContent(File serializedCurrBranchVersion, File serializedTargetBranchVersion) {
-        String currBranchVersionContent = serializedCurrBranchVersion != null ? getSerializedFileContent(serializedCurrBranchVersion): "";
-        String targetBranchVersionContent = serializedTargetBranchVersion != null ? getSerializedFileContent(serializedTargetBranchVersion): "";
-        return "<<<<<<< HEAD\n" + currBranchVersionContent + "=======\n" + targetBranchVersionContent + ">>>>>>>\n";
+    private static String getConflictedFilesContent(
+            File currBranchVersion,
+            File targetBranchVersion
+    ) {
+        String currBranchVersionContent = currBranchVersion != null
+                ? getSerializedFileContent(currBranchVersion)
+                : "";
+        String targetBranchVersionContent = targetBranchVersion != null
+                ? getSerializedFileContent(targetBranchVersion)
+                : "";
+        return "<<<<<<< HEAD\n"
+                + currBranchVersionContent
+                + "=======\n"
+                + targetBranchVersionContent
+                + ">>>>>>>\n";
     }
 
     private static Commit findSplitPoint(String currBranch, String targetBranch) {
-        List<String> currBranchCommitHistory = getCommitHistory(Refs.getHeadCommitId(currBranch));
-        List<String> targetBranchCommitHistory = getCommitHistory(Refs.getHeadCommitId(targetBranch));
-        for (String c: targetBranchCommitHistory) {
+        List<String> currBranchCommitHistory =
+                getCommitHistory(Refs.getHeadCommitId(currBranch));
+        List<String> targetBranchCommitHistory =
+                getCommitHistory(Refs.getHeadCommitId(targetBranch));
+        for (String c : targetBranchCommitHistory) {
             if (currBranchCommitHistory.contains(c)) {
                 return getCommitByShaHash(c);
             }
@@ -310,33 +369,42 @@ public class Repository {
         Queue<String> commitQueue = new ArrayDeque<>();
         commitQueue.add(commitID);
         while (commitQueue.peek() != null) {
-             String currCommitID = commitQueue.poll();
-             if (res.contains(currCommitID)) {
-                 continue;
-             } else {
-                 res.add(currCommitID);
-             }
-             Commit currCommit = getCommitByShaHash(currCommitID);
-             String parentIdOne = currCommit.getParentID();
-             String parentIdTwo = currCommit.getSecondParentID();
-             if (parentIdOne != null) {
-                 commitQueue.add(parentIdOne);
-             }
-             if (parentIdTwo != null) {
-                 commitQueue.add(parentIdTwo);
-             }
+            String currCommitID = commitQueue.poll();
+            if (res.contains(currCommitID)) {
+                continue;
+            } else {
+                res.add(currCommitID);
+            }
+            Commit currCommit = getCommitByShaHash(currCommitID);
+            String parentIdOne = currCommit.getParentId();
+            String parentIdTwo = currCommit.getSecondParentId();
+            if (parentIdOne != null) {
+                commitQueue.add(parentIdOne);
+            }
+            if (parentIdTwo != null) {
+                commitQueue.add(parentIdTwo);
+            }
         }
         return res;
     }
 
-    private static void commitMerge(String message, String currBranchHeadID, String targetBranchHeadID) {
+    private static void commitMerge(
+            String message,
+            String currBranchHeadID,
+            String targetBranchHeadID
+    ) {
         Map<String, byte[]> stagingArea = StagingArea.getNewestStagingArea();
         if (stagingArea.isEmpty()) {
             System.out.println("No changes added to the commit.");
             return;
         }
         String activeBranch = Refs.getActiveBranch();
-        Commit newCommit = new Commit(message, currBranchHeadID, targetBranchHeadID, activeBranch);
+        Commit newCommit = new Commit(
+                message,
+                currBranchHeadID,
+                targetBranchHeadID,
+                activeBranch
+        );
         newCommit.setTrackedFiles(StagingArea.getNewestStagingArea());
 
         try {
@@ -365,9 +433,8 @@ public class Repository {
         File branchPointer = join(Refs.HEADS_DIR, branchName);
         try {
             branchPointer.delete();
-        } catch (Exception e) {
+        } catch (SecurityException e) {
             System.out.println(e.getMessage());
-            ;
         }
     }
 
@@ -395,10 +462,10 @@ public class Repository {
 
     public static void log(Commit commit, String commitID) {
         commit.log(commitID);
-        if (commit.getParentID() == null) {
+        if (commit.getParentId() == null) {
             return;
         }
-        String parentId = commit.getParentID();
+        String parentId = commit.getParentId();
         Commit parentCommit = commit.getParentCommit();
         log(parentCommit, parentId);
     }
@@ -445,7 +512,7 @@ public class Repository {
 
     private static void getAllCommits(Commit commit, HashMap<String, Commit> allCommits) {
         String commitID = getCommitId(commit);
-        String parentID = commit.getParentID();
+        String parentID = commit.getParentId();
         allCommits.put(commitID, commit);
         if (parentID == null || allCommits.containsKey(parentID)) {
             return;
@@ -470,7 +537,8 @@ public class Repository {
             boolean isStaged = sa.containsKey(fileName);
             byte[] fileContent = readContents(join(CWD, fileName));
             if (isTrackedByHead && !isStaged) {
-                boolean isTrackedAndUnmodified = isFileTrackedByHeadAndUnchanged(fileName, fileContent, trackedByHead);
+                boolean isTrackedAndUnmodified =
+                        isFileTrackedByHeadAndUnchanged(fileName, fileContent, trackedByHead);
                 if (!isTrackedAndUnmodified) {
                     modified.add(fileName + " (modified)");
                     trackedByHead.remove(fileName);

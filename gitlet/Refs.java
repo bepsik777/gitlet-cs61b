@@ -1,6 +1,7 @@
 package gitlet;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -20,7 +21,7 @@ public class Refs {
             REMOTES_DIR.mkdir();
             HEAD.createNewFile();
             masterBranch.createNewFile();
-        } catch (Exception e) {
+        } catch (IOException e) {
             System.out.println(e.getMessage());
         }
     }
@@ -71,7 +72,7 @@ public class Refs {
         try {
             newBranch.createNewFile();
             writeContents(newBranch, headCommitID);
-        } catch (Exception e) {
+        } catch (IOException e) {
             System.out.println(e.getMessage());
         }
     }
@@ -82,6 +83,8 @@ public class Refs {
             System.out.println("no commits to log");
             return null;
         }
-        return filesInHeadsDir.stream().map(fileName -> readContentsAsString(join(HEADS_DIR, fileName))).map(Utils::getCommitByShaHash).collect(Collectors.toList());
+        return filesInHeadsDir.stream().
+                map(fileName -> readContentsAsString(join(HEADS_DIR, fileName))).
+                map(Utils::getCommitByShaHash).collect(Collectors.toList());
     }
 }

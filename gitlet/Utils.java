@@ -27,6 +27,7 @@ import java.util.*;
  */
 class Utils {
 
+    public static final int SHA_HASH_LENGTH = 40;
     /**
      * The length of a complete SHA-1 UID as a hexadecimal numeral.
      */
@@ -155,8 +156,7 @@ class Utils {
      * Return an object of type T read from FILE, casting it to EXPECTEDCLASS.
      * Throws IllegalArgumentException in case of problems.
      */
-    static <T extends Serializable> T readObject(File file,
-                                                 Class<T> expectedClass) {
+    static <T extends Serializable> T readObject(File file, Class<T> expectedClass) {
         try {
             ObjectInputStream in =
                     new ObjectInputStream(new FileInputStream(file));
@@ -181,13 +181,12 @@ class Utils {
     /**
      * Filter out all but plain files.
      */
-    private static final FilenameFilter PLAIN_FILES =
-            new FilenameFilter() {
-                @Override
-                public boolean accept(File dir, String name) {
-                    return new File(dir, name).isFile();
-                }
-            };
+    private static final FilenameFilter PLAIN_FILES = new FilenameFilter() {
+        @Override
+        public boolean accept(File dir, String name) {
+            return new File(dir, name).isFile();
+        }
+    };
 
     /**
      * Returns a list of the names of all plain files in the directory DIR, in
@@ -292,8 +291,18 @@ class Utils {
 
     public static Commit getCommitByShaHash(String id) {
         File directory = join(Repository.OBJECTS, id.substring(0, 2));
-        File commitFile = join(directory, id.substring(2));
-        if (!commitFile.exists()) {
+        File commitFile = null;
+        if (id.length() < SHA_HASH_LENGTH) {
+            List<String> filesInDir = plainFilenamesIn(directory);
+            for (String f : filesInDir) {
+                if (f.startsWith(id.substring(2))) {
+                    commitFile = join(directory, f);
+                }
+            }
+        } else {
+            commitFile = join(directory, id.substring(2));
+        }
+        if (commitFile == null || !commitFile.exists()) {
             return null;
         }
         return readObject(commitFile, Commit.class);
@@ -355,7 +364,7 @@ class Utils {
 
     /**
      * Checks if file is tracked by commit specified by sha hash
-     * */
+     */
     public static boolean isFileTrackedByCommit(String filePath, String commitID) {
         Commit commit = getCommitByShaHash(commitID);
         Map<String, String> headTrackedFiles = commit.getTrackedFiles();
@@ -387,7 +396,11 @@ class Utils {
         return false;
     }
 
-    public static boolean isFileTrackedByHeadAndUnchanged(String filePath, byte[] fileContent, Map<String, String> headTrackedFiles) {
+    public static boolean isFileTrackedByHeadAndUnchanged(
+            String filePath,
+            byte[] fileContent,
+            Map<String, String> headTrackedFiles
+    ) {
         if (headTrackedFiles.containsKey(filePath)) {
             String fileHash = headTrackedFiles.get(filePath);
             File trackedFile = getFileByShaHash(fileHash);
@@ -409,7 +422,7 @@ class Utils {
         writeContents(newFile, contentAsString);
         try {
             newFile.createNewFile();
-        } catch (Exception e) {
+        } catch (IOException e) {
             System.out.println(e.getMessage());
         }
     }
