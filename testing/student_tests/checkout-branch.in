@@ -1,0 +1,59 @@
+I definitions.inc
+> init
+<<<
++ wug.txt wug.txt
+> add wug.txt
+<<<
+> commit "first one"
+<<<
+> log
+===
+${COMMIT_HEAD}
+first one
+
+===
+${COMMIT_HEAD}
+initial commit
+
+<<<*
+> branch hello
+<<<
+> checkout hello
+<<<
++ wug2.txt notwug.txt
+> add wug2.txt
+<<<
+> commit "added new wug"
+<<<
+> checkout master
+<<<
+* wug2.txt
+> log
+===
+${COMMIT_HEAD}
+first one
+
+===
+${COMMIT_HEAD}
+initial commit
+
+<<<*
+> rm wug.txt
+<<<
+> checkout hello
+<<<
+> log
+===
+${COMMIT_HEAD}
+added new wug
+
+===
+${COMMIT_HEAD}
+first one
+
+===
+${COMMIT_HEAD}
+initial commit
+
+<<<*
+E wug.txt

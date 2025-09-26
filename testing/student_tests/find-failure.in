@@ -1,0 +1,6 @@
+I init.inc
+> commit "some commit"
+<<<
+> find "test message"
+Found no commit with that message.
+<<<

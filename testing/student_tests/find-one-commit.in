@@ -1,0 +1,17 @@
+I init.inc
+> commit "first commit"
+<<<
+> log
+===
+${COMMIT_HEAD}
+first commit
+
+===
+${COMMIT_HEAD}
+initial commit
+
+<<<*
+D UID "${1}"
+> find "first commit"
+${UID}
+<<<*

@@ -1,0 +1,57 @@
+# Create two branches and merge other into master.
+I init.inc
+> commit "two files"
+<<<
+> branch other
+<<<
++ h.txt wug2.txt
+> add h.txt
+<<<
+> rm g.txt
+<<<
+> commit "Add h.txt and remove g.txt"
+<<<
+> status
+${ARBLINES}
+<<<*
+> checkout other
+<<<
+> rm f.txt
+<<<
++ k.txt wug3.txt
+> add k.txt
+<<<
+> commit "Add k.txt and remove f.txt"
+<<<
+> checkout master
+<<<
+> status
+${ARBLINES}
+<<<*
+> merge other
+<<<
+* f.txt
+* g.txt
+= h.txt wug2.txt
+= k.txt wug3.txt
+> log
+===
+${COMMIT_HEAD}
+Merged other into master\.
+
+${ARBLINES}
+<<<*
+> status
+=== Branches ===
+*master
+other
+
+=== Staged Files ===
+
+=== Removed Files ===
+
+=== Modifications Not Staged For Commit ===
+
+=== Untracked Files ===
+
+<<<

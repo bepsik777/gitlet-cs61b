@@ -1,0 +1,26 @@
+I init.inc
+> commit "test message"
+<<<
+> branch new-branch
+<<<
+> checkout new-branch
+<<<
+> rm f.txt
+<<<
+> commit "test message"
+<<<
+> global-log
+===
+${COMMIT_HEAD}
+test message
+
+===
+${COMMIT_HEAD}
+test message
+<<<*
+D UID1 "${1}"
+D UID2 "${2}"
+> find "test message"
+${UID1}
+${UID2}
+<<<

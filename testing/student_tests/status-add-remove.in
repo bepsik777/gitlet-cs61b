@@ -1,0 +1,20 @@
+I definitions.inc
+I init.inc
+> rm f.txt
+<<<
+> status
+=== Branches ===
+\*master
+
+=== Staged Files ===
+g.txt
+
+=== Removed Files ===
+
+=== Modifications Not Staged For Commit ===
+
+=== Untracked Files ===
+${ARBLINES}
+
+<<<*
+= f.txt wug.txt
